@@ -18,7 +18,6 @@ const AddDiagnosis = () => {
     futureCheckupNotes: "",
   });
 
-  // Fetch users on component mount
   useEffect(() => {
     const fetchUsers = async () => {
       try {
@@ -42,26 +41,22 @@ const AddDiagnosis = () => {
     }
   }, [backendUrl, dToken]);
 
-  // Handle form field changes
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // Handle user selection
   const handleUserSelect = (e) => {
     const userId = e.target.value;
     const user = users.find((u) => u._id === userId);
     setSelectedUser(user);
   };
 
-  // Handle medication field changes
   const handleMedicationChange = (index, e) => {
     const newMedications = [...form.medications];
     newMedications[index][e.target.name] = e.target.value;
     setForm({ ...form, medications: newMedications });
   };
 
-  // Add new medication field
   const addMedication = () => {
     setForm({
       ...form,
@@ -72,23 +67,19 @@ const AddDiagnosis = () => {
     });
   };
 
-  // Remove medication field
   const removeMedication = (index) => {
     const newMedications = form.medications.filter((_, i) => i !== index);
     setForm({ ...form, medications: newMedications });
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validate required fields
     if (!selectedUser || !form.diagnosisTitle || !form.description) {
       toast.error("Please select a patient and enter diagnosis details");
       return;
     }
 
-    // Validate at least one complete medication
     const validMedications = form.medications.filter(
       (med) => med.name && med.dosage && med.duration
     );
@@ -98,7 +89,6 @@ const AddDiagnosis = () => {
       return;
     }
 
-    // Format date of birth for MySQL
     const formattedDob = (() => {
       if (!selectedUser?.dob) return null;
       const dobDate = new Date(selectedUser.dob);
@@ -108,7 +98,6 @@ const AddDiagnosis = () => {
         : dobDate.toISOString().split("T")[0];
     })();
 
-    // Prepare diagnosis data
     const diagnosisData = {
       _id: selectedUser._id,
       userData: {
@@ -140,7 +129,6 @@ const AddDiagnosis = () => {
       const result = await createDiagnosis(diagnosisData);
 
       if (result) {
-        // Reset form on success
         setSelectedUser(null);
         setForm({
           diagnosisTitle: "",
@@ -167,7 +155,6 @@ const AddDiagnosis = () => {
       </h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Patient Selection */}
         <div className="form-group">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Patient *
@@ -213,7 +200,6 @@ const AddDiagnosis = () => {
           )}
         </div>
 
-        {/* Diagnosis Title */}
         <div className="form-group">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Diagnosis Title *
@@ -229,7 +215,6 @@ const AddDiagnosis = () => {
           />
         </div>
 
-        {/* Description */}
         <div className="form-group">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Description *
@@ -245,7 +230,6 @@ const AddDiagnosis = () => {
           />
         </div>
 
-        {/* Medications */}
         <div className="form-group">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-lg font-medium text-gray-800">Medications *</h3>
@@ -319,7 +303,6 @@ const AddDiagnosis = () => {
           ))}
         </div>
 
-        {/* Future Checkup */}
         <div className="form-group">
           <h3 className="text-lg font-medium text-gray-800 mb-2">
             Future Checkup
@@ -365,7 +348,6 @@ const AddDiagnosis = () => {
           </div>
         </div>
 
-        {/* Submit Button */}
         <div className="pt-4">
           <button
             type="submit"

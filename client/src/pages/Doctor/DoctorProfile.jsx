@@ -55,12 +55,10 @@ const DoctorProfile = () => {
             />
           </div>
           <div className="flex-1 border border-stone-100 rounded-lg p-8 py-7 bg-white">
-            {/* Doctor Name */}
             <p className="flex items-center gap-2 text-3xl font-medium text-gray-700">
               {profileData.name}
             </p>
 
-            {/* Degree + Specialty + Experience */}
             <div className="flex items-center gap-2 mt-1 text-gray-600">
               <p>
                 {profileData.degree} - {profileData.specialty}
@@ -70,7 +68,6 @@ const DoctorProfile = () => {
               </button>
             </div>
 
-            {/* About */}
             <div>
               <p className="flex items-center gap-1 text-sm font-medium text-neutral-800 mt-3">
                 About:
@@ -80,7 +77,6 @@ const DoctorProfile = () => {
               </p>
             </div>
 
-            {/* Appointment Fee */}
             <p className="text-gray-600 font-medium mt-4">
               Appointment Fee:{" "}
               <span className="text-gray-800">
@@ -102,7 +98,6 @@ const DoctorProfile = () => {
               </span>
             </p>
 
-            {/* Address */}
             <div className="flex gap-2 py-2">
               <p>Address:</p>
               <p className="text-sm">
@@ -138,7 +133,6 @@ const DoctorProfile = () => {
               </p>
             </div>
 
-            {/* Availability */}
             <div className="flex gap-1 pt-2">
               <input
                 onChange={() =>
@@ -170,8 +164,6 @@ const DoctorProfile = () => {
                 Edit
               </button>
             )}
-
-            {/* Edit Button */}
           </div>
         </div>
       </div>

@@ -43,7 +43,6 @@ const AddDoctor = () => {
         JSON.stringify({ line1: address1, line2: address2 })
       );
 
-      //   console log formdata
       formData.forEach((value, key) => {
         console.log(`${key} : ${value}`);
       });
@@ -79,7 +78,6 @@ const AddDoctor = () => {
       <p className="mb-3 text-lg font-medium">Add Doctor</p>
 
       <div className="bg-white px-8 py-8 border border-gray-300 rounded w-full max-w-4xl max-h-[90vh] overflow-y-scroll">
-        {/* Upload image */}
         <div className="flex items-center gap-4 mb-8 text-gray-500">
           <label htmlFor="doc-img">
             <img

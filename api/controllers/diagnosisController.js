@@ -107,7 +107,6 @@ async function getDiagnoses(req, res) {
   try {
     const mongoDoctorId = req.doctorId;
 
-    // Get doctor internal ID and name only
     const [doctorRows] = await pool.execute(
       `SELECT id, name FROM doctors WHERE mongo_id = ?`,
       [mongoDoctorId]
@@ -123,7 +122,6 @@ async function getDiagnoses(req, res) {
     const doctorInfo = doctorRows[0];
     const doctorId = doctorInfo.id;
 
-    // Get diagnoses with patient info and doctor name
     const [diagnoses] = await pool.execute(
       `SELECT d.id AS diagnosis_id, d.diagnosis_title, d.description, d.diagnosis_date,
               u.id AS user_id, u.name AS patient_name, u.dob AS patient_dob, u.mongo_id,
@@ -136,7 +134,6 @@ async function getDiagnoses(req, res) {
       [doctorId]
     );
 
-    // Extract diagnosis IDs to fetch medications
     const diagnosisIds = diagnoses.map((d) => d.diagnosis_id);
     let medications = [];
     if (diagnosisIds.length > 0) {
@@ -149,7 +146,6 @@ async function getDiagnoses(req, res) {
       medications = meds;
     }
 
-    // Fetch Mongo user images
     const mongoUserIds = diagnoses.map((d) => d.mongo_id);
     const mongoUsers = await UserModel.find(
       { _id: { $in: mongoUserIds } },
@@ -161,7 +157,6 @@ async function getDiagnoses(req, res) {
       return acc;
     }, {});
 
-    // Map meds by diagnosis_id
     const medsMap = medications.reduce((acc, med) => {
       if (!acc[med.diagnosis_id]) acc[med.diagnosis_id] = [];
       acc[med.diagnosis_id].push({
@@ -172,7 +167,6 @@ async function getDiagnoses(req, res) {
       return acc;
     }, {});
 
-    // Combine all data
     const enrichedDiagnoses = diagnoses.map((d) => ({
       diagnosis_id: d.diagnosis_id,
       diagnosis_title: d.diagnosis_title,
@@ -249,7 +243,7 @@ async function deleteDiagnosis(req, res) {
 
 async function updateDiagnosis(req, res) {
   try {
-    const { id } = req.params; // diagnosis id
+    const { id } = req.params;
     const { medications = [] } = req.body;
 
     if (!id) {
@@ -259,7 +253,6 @@ async function updateDiagnosis(req, res) {
       });
     }
 
-    // Check if diagnosis exists
     const [existing] = await pool.execute(
       `SELECT * FROM diagnosis WHERE id = ?`,
       [id]
@@ -271,10 +264,8 @@ async function updateDiagnosis(req, res) {
       });
     }
 
-    // Delete old medications for this diagnosis
     await pool.execute(`DELETE FROM medications WHERE diagnosis_id = ?`, [id]);
 
-    // Insert new medications
     if (medications.length > 0) {
       await Promise.all(
         medications.map((med) =>
