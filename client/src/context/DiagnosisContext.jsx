@@ -94,7 +94,6 @@ const DiagnosisContextProvider = ({ children }) => {
 
       if (data.success) {
         toast.success(data.message || "Diagnosis deleted");
-        // Refresh the list
         getDiagnoses();
       } else {
         toast.error(data.message || "Failed to delete diagnosis");

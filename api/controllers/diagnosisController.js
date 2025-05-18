@@ -3,6 +3,7 @@ import {
   getOrCreateMySQLUserId,
   getOrCreateMySQLDoctorId,
 } from "../Helpers/mongoDbHelper.js";
+import UserModel from "../models/userModel.js";
 
 async function createDiagnosis(req, res) {
   try {
@@ -121,17 +122,34 @@ async function getDiagnoses(req, res) {
     const doctorId = doctorRows[0].id;
 
     const [diagnoses] = await pool.execute(
-      `SELECT d.*, u.name AS patient_name, u.dob AS patient_dob
-   FROM diagnosis d
-   JOIN users u ON d.user_id = u.id
-   WHERE d.doctor_id = ?
-   ORDER BY d.diagnosis_date DESC`,
+      `SELECT d.*, u.name AS patient_name, u.dob AS patient_dob, u.mongo_id
+       FROM diagnosis d
+       JOIN users u ON d.user_id = u.id
+       WHERE d.doctor_id = ?
+       ORDER BY d.diagnosis_date DESC`,
       [doctorId]
     );
 
+    const mongoUserIds = diagnoses.map((d) => d.mongo_id);
+
+    const mongoUsers = await UserModel.find(
+      { _id: { $in: mongoUserIds } },
+      { _id: 1, image: 1 }
+    ).lean();
+
+    const imageMap = mongoUsers.reduce((acc, user) => {
+      acc[user._id.toString()] = user.image;
+      return acc;
+    }, {});
+
+    const enrichedDiagnoses = diagnoses.map((d) => ({
+      ...d,
+      image: imageMap[d.mongo_id] || null,
+    }));
+
     return res.status(200).json({
       success: true,
-      diagnoses,
+      diagnoses: enrichedDiagnoses,
     });
   } catch (error) {
     console.error("Error fetching diagnoses:", error);
