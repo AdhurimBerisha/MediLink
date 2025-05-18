@@ -107,8 +107,9 @@ async function getDiagnoses(req, res) {
   try {
     const mongoDoctorId = req.doctorId;
 
+    // Get doctor internal ID and name only
     const [doctorRows] = await pool.execute(
-      `SELECT id FROM doctors WHERE mongo_id = ?`,
+      `SELECT id, name FROM doctors WHERE mongo_id = ?`,
       [mongoDoctorId]
     );
 
@@ -119,19 +120,37 @@ async function getDiagnoses(req, res) {
       });
     }
 
-    const doctorId = doctorRows[0].id;
+    const doctorInfo = doctorRows[0];
+    const doctorId = doctorInfo.id;
 
+    // Get diagnoses with patient info and doctor name
     const [diagnoses] = await pool.execute(
-      `SELECT d.*, u.name AS patient_name, u.dob AS patient_dob, u.mongo_id
+      `SELECT d.id AS diagnosis_id, d.diagnosis_title, d.description, d.diagnosis_date,
+              u.id AS user_id, u.name AS patient_name, u.dob AS patient_dob, u.mongo_id,
+              doc.name AS doctor_name
        FROM diagnosis d
        JOIN users u ON d.user_id = u.id
+       JOIN doctors doc ON d.doctor_id = doc.id
        WHERE d.doctor_id = ?
        ORDER BY d.diagnosis_date DESC`,
       [doctorId]
     );
 
-    const mongoUserIds = diagnoses.map((d) => d.mongo_id);
+    // Extract diagnosis IDs to fetch medications
+    const diagnosisIds = diagnoses.map((d) => d.diagnosis_id);
+    let medications = [];
+    if (diagnosisIds.length > 0) {
+      const [meds] = await pool.execute(
+        `SELECT diagnosis_id, medication_name, dosage, duration
+         FROM medications
+         WHERE diagnosis_id IN (${diagnosisIds.map(() => "?").join(",")})`,
+        diagnosisIds
+      );
+      medications = meds;
+    }
 
+    // Fetch Mongo user images
+    const mongoUserIds = diagnoses.map((d) => d.mongo_id);
     const mongoUsers = await UserModel.find(
       { _id: { $in: mongoUserIds } },
       { _id: 1, image: 1 }
@@ -142,9 +161,33 @@ async function getDiagnoses(req, res) {
       return acc;
     }, {});
 
+    // Map meds by diagnosis_id
+    const medsMap = medications.reduce((acc, med) => {
+      if (!acc[med.diagnosis_id]) acc[med.diagnosis_id] = [];
+      acc[med.diagnosis_id].push({
+        medication_name: med.medication_name,
+        dosage: med.dosage,
+        duration: med.duration,
+      });
+      return acc;
+    }, {});
+
+    // Combine all data
     const enrichedDiagnoses = diagnoses.map((d) => ({
-      ...d,
-      image: imageMap[d.mongo_id] || null,
+      diagnosis_id: d.diagnosis_id,
+      diagnosis_title: d.diagnosis_title,
+      description: d.description,
+      diagnosis_date: d.diagnosis_date,
+      patient: {
+        user_id: d.user_id,
+        name: d.patient_name,
+        dob: d.patient_dob,
+        image: imageMap[d.mongo_id] || null,
+      },
+      doctor: {
+        name: d.doctor_name,
+      },
+      medications: medsMap[d.diagnosis_id] || [],
     }));
 
     return res.status(200).json({
@@ -153,13 +196,14 @@ async function getDiagnoses(req, res) {
     });
   } catch (error) {
     console.error("Error fetching diagnoses:", error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to fetch diagnoses",
       error: error.message,
     });
   }
 }
+
 async function deleteDiagnosis(req, res) {
   try {
     const { id } = req.params;
@@ -203,4 +247,64 @@ async function deleteDiagnosis(req, res) {
   }
 }
 
-export { createDiagnosis, getDiagnoses, deleteDiagnosis };
+async function updateDiagnosis(req, res) {
+  try {
+    const { id } = req.params; // diagnosis id
+    const { medications = [] } = req.body;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Diagnosis ID is required",
+      });
+    }
+
+    // Check if diagnosis exists
+    const [existing] = await pool.execute(
+      `SELECT * FROM diagnosis WHERE id = ?`,
+      [id]
+    );
+    if (existing.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Diagnosis not found",
+      });
+    }
+
+    // Delete old medications for this diagnosis
+    await pool.execute(`DELETE FROM medications WHERE diagnosis_id = ?`, [id]);
+
+    // Insert new medications
+    if (medications.length > 0) {
+      await Promise.all(
+        medications.map((med) =>
+          pool.execute(
+            `INSERT INTO medications (diagnosis_id, medication_name, dosage, duration, notes)
+             VALUES (?, ?, ?, ?, ?)`,
+            [
+              id,
+              med.medication_name,
+              med.dosage,
+              med.duration,
+              med.notes || null,
+            ]
+          )
+        )
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Medications updated successfully",
+    });
+  } catch (error) {
+    console.error("Update medications error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to update medications",
+      error: error.message,
+    });
+  }
+}
+
+export { createDiagnosis, getDiagnoses, deleteDiagnosis, updateDiagnosis };

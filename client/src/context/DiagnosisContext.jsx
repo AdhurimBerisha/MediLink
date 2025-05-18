@@ -104,6 +104,27 @@ const DiagnosisContextProvider = ({ children }) => {
     }
   };
 
+  const updateDiagnosis = async (id, updatedData) => {
+    try {
+      const res = await axios.put(
+        backendUrl + `/api/diagnosis/update-diagnosis/${id}`,
+        updatedData,
+        {
+          headers: {
+            token: dToken,
+          },
+        }
+      );
+      if (res.data.success) {
+        toast.success("Diagnosis updated!");
+        getDiagnoses(); // Refresh
+      }
+    } catch (err) {
+      toast.error("Update failed");
+      console.error(err);
+    }
+  };
+
   const value = {
     dToken,
     setDToken,
@@ -113,6 +134,7 @@ const DiagnosisContextProvider = ({ children }) => {
     getDiagnoses,
     deleteDiagnosis,
     diagnosisList,
+    updateDiagnosis,
   };
 
   return (
