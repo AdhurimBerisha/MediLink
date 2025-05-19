@@ -14,6 +14,7 @@ import earning_icon from "./earning_icon.svg";
 import patients_icon from "./patients_icon.svg";
 import diagnosis_icon from "./diagnosis_icon.svg";
 import total_diagnosis_icon from "./total_diagnosis_icon.svg";
+import diagnosis_card_icon from "./diagnosis_card_icon.svg";
 
 export const assets = {
   add_icon,
@@ -32,4 +33,5 @@ export const assets = {
   diagnosis_icon,
   total_diagnosis_icon,
   edit_icon,
+  diagnosis_card_icon,
 };
